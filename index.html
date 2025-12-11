@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Netzwerktechnik Quiz - Klausurvorbereitung</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Canvas.confetti for celebration effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <!-- Animated background particles -->
+    <div class="particles-container" id="particles"></div>
     <div class="container">
         <header>
             <h1>🌐 Netzwerktechnik Quiz</h1>
@@ -45,11 +49,15 @@
 
             <!-- Quiz Screen -->
             <div id="quiz-screen" class="screen">
+                <div class="streak-display" id="streak-display">
+                    🔥 <span id="streak-count">0</span> Streak!
+                </div>
                 <div class="progress-bar">
                     <div id="progress" class="progress-fill"></div>
+                    <span class="progress-text" id="progress-text">0%</span>
                 </div>
                 <div class="question-info">
-                    <span id="question-number">Frage 1 von 30</span>
+                    <span id="question-number">Frage 1 von 20</span>
                     <span id="current-topic" class="topic-badge"></span>
                 </div>
                 
