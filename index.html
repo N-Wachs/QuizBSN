@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netzwerktechnik Quiz - Klausurvorbereitung</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 Netzwerktechnik Quiz</h1>
+            <p class="subtitle">Klausurvorbereitung - Grundlagen der Netzwerktechnik</p>
+        </header>
+
+        <div class="quiz-container">
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <h2>Willkommen zum Netzwerktechnik Quiz!</h2>
+                <p>Teste dein Wissen zu den folgenden Themen:</p>
+                <ul class="topics-list">
+                    <li>PAN, LAN, MAN, WAN</li>
+                    <li>Übertragungsmedien</li>
+                    <li>TP-Kabel und Glasfaser</li>
+                    <li>Netzwerkgeräte (Hub, Switch, Router)</li>
+                    <li>Netzwerktopologien</li>
+                    <li>Simplex, Halbduplex, Vollduplex</li>
+                    <li>Strukturierte Verkabelung</li>
+                    <li>Netzwerkkommunikation</li>
+                </ul>
+                <div class="topic-filter">
+                    <h3>Wähle ein Thema (optional):</h3>
+                    <select id="topic-select">
+                        <option value="all">Alle Themen</option>
+                        <option value="netzwerktypen">PAN, LAN, MAN, WAN</option>
+                        <option value="kabel">Kabel und Übertragungsmedien</option>
+                        <option value="geraete">Netzwerkgeräte</option>
+                        <option value="topologien">Topologien</option>
+                        <option value="kommunikation">Kommunikation</option>
+                        <option value="verkabelung">Strukturierte Verkabelung</option>
+                    </select>
+                </div>
+                <button id="start-btn" class="btn btn-primary">Quiz starten</button>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="screen">
+                <div class="progress-bar">
+                    <div id="progress" class="progress-fill"></div>
+                </div>
+                <div class="question-info">
+                    <span id="question-number">Frage 1 von 30</span>
+                    <span id="current-topic" class="topic-badge"></span>
+                </div>
+                
+                <div id="question-container">
+                    <h2 id="question-text"></h2>
+                    <div id="answers-container"></div>
+                </div>
+
+                <div class="feedback" id="feedback"></div>
+
+                <div class="quiz-controls">
+                    <button id="prev-btn" class="btn btn-secondary" disabled>Zurück</button>
+                    <button id="next-btn" class="btn btn-primary" disabled>Weiter</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="results-screen" class="screen">
+                <h2>Quiz abgeschlossen! 🎉</h2>
+                <div class="results-summary">
+                    <div class="score-circle">
+                        <span id="final-score">0%</span>
+                    </div>
+                    <p id="score-message"></p>
+                    <div class="results-details">
+                        <p><strong>Richtige Antworten:</strong> <span id="correct-count">0</span></p>
+                        <p><strong>Falsche Antworten:</strong> <span id="incorrect-count">0</span></p>
+                        <p><strong>Gesamt:</strong> <span id="total-count">0</span></p>
+                    </div>
+                </div>
+                <div class="results-actions">
+                    <button id="review-btn" class="btn btn-secondary">Antworten überprüfen</button>
+                    <button id="restart-btn" class="btn btn-primary">Neu starten</button>
+                </div>
+            </div>
+
+            <!-- Review Screen -->
+            <div id="review-screen" class="screen">
+                <h2>Antworten überprüfen</h2>
+                <div id="review-container"></div>
+                <button id="back-to-results-btn" class="btn btn-secondary">Zurück zu Ergebnissen</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>Klausurvorbereitung - Netzwerktechnik | 2025</p>
+        </footer>
+    </div>
+
+    <script src="quiz.js"></script>
+</body>
+</html>
