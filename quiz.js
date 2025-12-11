@@ -1174,7 +1174,7 @@ function selectAnswer(index) {
             maxStreak = currentStreak;
         }
         // Mini celebration for correct answer
-        if (currentStreak >= 3) {
+        if (currentStreak >= 3 && typeof confetti !== 'undefined') {
             confetti({
                 particleCount: 30,
                 spread: 60,
@@ -1380,6 +1380,11 @@ function updateStreakDisplay() {
 
 // Trigger confetti celebration
 function celebrate() {
+    // Check if confetti library is available
+    if (typeof confetti === 'undefined') {
+        return;
+    }
+    
     const duration = 3000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
