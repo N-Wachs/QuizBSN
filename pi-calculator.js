@@ -7,6 +7,7 @@ class PICalculator {
         this.shouldStop = false;
         this.startTime = 0;
         this.piValue = '';
+        this.worker = null;
         
         this.initializeElements();
         this.initializeEventListeners();
@@ -24,6 +25,9 @@ class PICalculator {
         this.decimalPlacesDisplay = document.getElementById('decimal-places');
         this.calculationTimeDisplay = document.getElementById('calculation-time');
         this.statusDisplay = document.getElementById('calculation-status');
+        this.progressContainer = document.getElementById('progress-container');
+        this.progressBar = document.getElementById('progress-bar');
+        this.progressText = document.getElementById('progress-text');
     }
 
     initializeEventListeners() {
@@ -68,19 +72,14 @@ class PICalculator {
         this.delayInput.disabled = true;
 
         this.showStatus('Berechnung läuft...', 'calculating');
+        this.progressContainer.classList.add('show');
+        this.updateProgress(0);
 
         // Initialize display
         this.piDisplay.innerHTML = '<span class="pi-integer">3</span><span class="pi-decimals">.</span>';
 
         try {
-            await this.calculatePiChudnovsky(iterations, delay);
-            
-            if (!this.shouldStop) {
-                this.showStatus('✓ Berechnung abgeschlossen!', 'completed');
-                this.copyBtn.disabled = false;
-            } else {
-                this.showStatus('Berechnung gestoppt', 'calculating');
-            }
+            await this.calculateWithWorker(iterations, delay);
         } catch (error) {
             this.showStatus('Fehler bei der Berechnung: ' + error.message, 'error');
             console.error(error);
@@ -96,6 +95,15 @@ class PICalculator {
     stopCalculation() {
         this.shouldStop = true;
         this.stopBtn.disabled = true;
+        
+        // Terminate the worker
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
+        }
+        
+        this.showStatus('Berechnung gestoppt', 'calculating');
+        this.progressContainer.classList.remove('show');
     }
 
     showStatus(message, type) {
@@ -111,79 +119,59 @@ class PICalculator {
         this.calculationTimeDisplay.textContent = `${elapsedTime}s`;
     }
 
-    async calculatePiChudnovsky(maxIterations, delay) {
-        // Using Machin-like formula for PI calculation with high precision
-        // Machin's formula: PI/4 = 4*arctan(1/5) - arctan(1/239)
-        // Using BigInt for arbitrary precision
-        
-        const digitsPerIteration = 1.4; // Approximate digits per iteration
-        const targetDigits = Math.ceil(maxIterations * digitsPerIteration);
-        
-        let piString = '';
-        
-        for (let iteration = 1; iteration <= maxIterations; iteration++) {
-            if (this.shouldStop) break;
+    updateProgress(percentage) {
+        const rounded = Math.min(100, Math.max(0, percentage)).toFixed(1);
+        this.progressBar.style.width = rounded + '%';
+        this.progressText.textContent = rounded + '%';
+    }
 
-            // Calculate with increasing precision using BigInt
-            const currentDigits = Math.ceil(iteration * digitsPerIteration);
+    calculateWithWorker(iterations, delay) {
+        return new Promise((resolve, reject) => {
+            // Create a new worker
+            this.worker = new Worker('pi-calculator-worker.js');
             
-            // Calculate PI using Machin's formula with BigInt
-            piString = this.calculatePiMachin(currentDigits + 5);
-
-            // Update display
-            if (iteration % Math.max(1, Math.floor(maxIterations / 50)) === 0 || iteration === maxIterations) {
-                // Truncate to currentDigits for display
-                const truncated = piString.substring(0, currentDigits + 2); // +2 for "3."
-                this.displayPi(truncated);
-                this.updateStats(iteration, truncated.length - 2); // -2 for "3."
+            // Handle messages from the worker
+            this.worker.onmessage = (e) => {
+                const { type, piValue, decimalPlaces, iteration, progress, message } = e.data;
                 
-                if (delay > 0) {
-                    await this.sleep(delay);
+                if (type === 'progress') {
+                    this.displayPi(piValue);
+                    this.updateStats(iteration, decimalPlaces);
+                    this.updateProgress(progress);
+                } else if (type === 'complete') {
+                    this.displayPi(piValue);
+                    this.updateStats(iteration, decimalPlaces);
+                    this.updateProgress(100);
+                    this.showStatus('✓ Berechnung abgeschlossen!', 'completed');
+                    this.copyBtn.disabled = false;
+                    this.progressContainer.classList.remove('show');
+                    this.worker.terminate();
+                    this.worker = null;
+                    resolve();
+                } else if (type === 'error') {
+                    this.showStatus('Fehler: ' + message, 'error');
+                    this.progressContainer.classList.remove('show');
+                    this.worker.terminate();
+                    this.worker = null;
+                    reject(new Error(message));
                 }
-            }
-        }
-
-        // Final display
-        const finalPi = piString.substring(0, targetDigits + 2);
-        this.displayPi(finalPi);
-        this.updateStats(maxIterations, finalPi.length - 2);
+            };
+            
+            // Handle worker errors
+            this.worker.onerror = (error) => {
+                this.showStatus('Worker-Fehler: ' + error.message, 'error');
+                this.progressContainer.classList.remove('show');
+                console.error('Worker error:', error);
+                this.worker = null;
+                reject(error);
+            };
+            
+            // Start the calculation
+            this.worker.postMessage({ iterations, delay });
+        });
     }
 
-    calculatePiMachin(digits) {
-        // Calculate PI using Machin's formula with BigInt
-        // PI = 16*arctan(1/5) - 4*arctan(1/239)
-        
-        const scale = BigInt(10) ** BigInt(digits + 10);
-        
-        const arctan5 = this.arctanBigInt(5n, scale, digits);
-        const arctan239 = this.arctanBigInt(239n, scale, digits);
-        
-        const pi = (16n * arctan5 - 4n * arctan239) / (scale / BigInt(10) ** BigInt(digits));
-        
-        // Convert to string with decimal point
-        const piStr = pi.toString();
-        if (piStr.length <= 1) return "3.14159";
-        
-        return piStr.charAt(0) + '.' + piStr.substring(1);
-    }
 
-    arctanBigInt(x, scale, precision) {
-        // Calculate arctan(1/x) using Taylor series with BigInt
-        // arctan(1/x) = 1/x - 1/(3*x^3) + 1/(5*x^5) - ...
-        
-        let sum = 0n;
-        let xSquared = x * x;
-        let power = scale / x;
-        let sign = 1n;
-        
-        for (let i = 0; i < precision && power > 0n; i++) {
-            sum += sign * power / BigInt(2 * i + 1);
-            power = power / xSquared;
-            sign = -sign;
-        }
-        
-        return sum;
-    }
 
     displayPi(piString) {
         // Store for copying
@@ -222,9 +210,7 @@ class PICalculator {
         }
     }
 
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+
 }
 
 // Initialize calculator when DOM is loaded
