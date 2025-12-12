@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PI Rechner - Hochpräzise Berechnung</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Additional styles specific to PI calculator */
+        .pi-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            background: var(--background);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1.5rem 0;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.8;
+            border: 2px solid var(--border-color);
+        }
+
+        .pi-integer {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+
+        .pi-decimals {
+            color: var(--text-primary);
+        }
+
+        .calculation-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .control-group {
+            background: var(--background);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .control-group input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .control-group .description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-box {
+            background: var(--background);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .button-group .btn {
+            flex: 1;
+        }
+
+        .calculation-status {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .calculation-status.show {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .calculation-status.calculating {
+            background: #eff6ff;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .calculation-status.completed {
+            background: #f0fdf4;
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+        }
+
+        .digit-highlight {
+            color: var(--secondary-color);
+            font-weight: bold;
+            animation: highlightDigit 0.5s ease;
+        }
+
+        @keyframes highlightDigit {
+            0% {
+                background: rgba(139, 92, 246, 0.3);
+            }
+            100% {
+                background: transparent;
+            }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .pi-display {
+                font-size: 1rem;
+                padding: 1rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="particles-container" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <h1>🔢 PI Rechner</h1>
+            <p class="subtitle">Hochpräzise Berechnung von π mit kontrollierbarer Genauigkeit</p>
+        </header>
+
+        <div class="quiz-container">
+            <h2 style="color: var(--primary-color); margin-bottom: 1.5rem;">PI Berechnung Konfigurieren</h2>
+            
+            <div class="calculation-controls">
+                <div class="control-group">
+                    <label for="iterations">Anzahl der Iterationen:</label>
+                    <input type="number" id="iterations" min="1" max="1000" value="100" step="1">
+                    <div class="description">
+                        Mehr Iterationen = höhere Genauigkeit. Jede Iteration liefert etwa 14 zusätzliche korrekte Dezimalstellen.
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="delay">Anzeigeverzögerung (ms):</label>
+                    <input type="number" id="delay" min="0" max="1000" value="10" step="10">
+                    <div class="description">
+                        Verzögerung zwischen Iterationen für visuelle Darstellung (0 = maximale Geschwindigkeit).
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="start-calculation" class="btn btn-primary">Berechnung starten</button>
+                <button id="stop-calculation" class="btn btn-secondary" disabled>Berechnung stoppen</button>
+                <button id="copy-pi" class="btn btn-secondary" disabled>PI kopieren</button>
+            </div>
+
+            <div class="calculation-status" id="calculation-status"></div>
+
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-label">Iterationen</div>
+                    <div class="stat-value" id="current-iteration">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Dezimalstellen</div>
+                    <div class="stat-value" id="decimal-places">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Berechnungszeit</div>
+                    <div class="stat-value" id="calculation-time">0s</div>
+                </div>
+            </div>
+
+            <div class="pi-display" id="pi-display">
+                <span class="pi-integer">3</span><span class="pi-decimals">.</span>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: var(--background); border-radius: 0.75rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">ℹ️ Über diesen PI Rechner</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Dieser Rechner verwendet den <strong>Chudnovsky-Algorithmus</strong>, einen der schnellsten bekannten 
+                    Algorithmen zur Berechnung von π. Jede Iteration liefert etwa 14 zusätzliche korrekte Dezimalstellen. 
+                    Die Berechnung erfolgt mit hoher Präzision unter Verwendung der BigInt-Arithmetik von JavaScript.
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-top: 0.5rem;">
+                    <strong>Hinweis:</strong> Bei sehr hohen Iterationszahlen (>500) kann die Berechnung einige Zeit dauern 
+                    und den Browser belasten.
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            <p>PI Rechner | 2025 | <a href="index.html" style="color: white; text-decoration: underline;">Zurück zum Quiz</a></p>
+        </footer>
+    </div>
+
+    <script src="pi-calculator.js"></script>
+</body>
+</html>
