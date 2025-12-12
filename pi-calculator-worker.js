@@ -2,10 +2,16 @@
 // This runs in a separate thread to keep the UI responsive
 
 self.onmessage = function(e) {
-    const { iterations, delay, startIteration = 1, useGpu = false } = e.data;
+    const { iterations, delay, startIteration = 1, useGpu = false, workerId = 0, totalWorkers = 1, termStart = 0, termEnd = 0 } = e.data;
     
     try {
-        calculatePiChudnovsky(iterations, delay, startIteration, useGpu);
+        // New parallel mode: calculate specific terms of the series
+        if (termStart !== undefined && termEnd !== undefined && termEnd > termStart) {
+            calculatePartialArctan(termStart, termEnd, iterations, workerId, totalWorkers);
+        } else {
+            // Legacy mode: full calculation (backwards compatible)
+            calculatePiChudnovsky(iterations, delay, startIteration, useGpu);
+        }
     } catch (error) {
         self.postMessage({
             type: 'error',
@@ -34,12 +40,13 @@ async function calculatePiChudnovsky(maxIterations, delay, startIteration = 1, u
         // Update display periodically or on last iteration
         if (iteration % Math.max(1, Math.floor(maxIterations / 50)) === 0 || iteration === maxIterations) {
             const truncated = piString.substring(0, currentDigits + 2); // +2 for "3."
+            const actualDecimalPlaces = truncated.length - 2;
             
             self.postMessage({
                 type: 'progress',
                 iteration: absoluteIteration,
                 piValue: truncated,
-                decimalPlaces: truncated.length - 2,
+                decimalPlaces: actualDecimalPlaces,
                 progress: progress
             });
             
@@ -164,6 +171,61 @@ function arctanBigIntOptimized(x, scale, precision) {
             sum += sign * power / BigInt(2 * idx + 1);
             power = power / xSquared;
             sign = -sign;
+        }
+    }
+    
+    return sum;
+}
+
+// New function: Calculate partial arctan terms for parallel processing
+function calculatePartialArctan(termStart, termEnd, targetDigits, workerId, totalWorkers) {
+    const scale = BigInt(10) ** BigInt(targetDigits + 10);
+    
+    // Calculate partial sums for arctan(1/5) and arctan(1/239)
+    const partial5 = arctanBigIntPartial(5n, scale, termStart, termEnd, workerId);
+    const partial239 = arctanBigIntPartial(239n, scale, termStart, termEnd, workerId);
+    
+    // Send result back to main thread
+    self.postMessage({
+        type: 'partial_result',
+        workerId: workerId,
+        partial5: partial5.toString(),
+        partial239: partial239.toString(),
+        termStart: termStart,
+        termEnd: termEnd
+    });
+}
+
+function arctanBigIntPartial(x, scale, termStart, termEnd, workerId) {
+    // Calculate partial sum of arctan(1/x) from termStart to termEnd
+    // arctan(1/x) = sum of (-1)^n * (1/x)^(2n+1) / (2n+1)
+    
+    let sum = 0n;
+    const xSquared = x * x;
+    
+    // Calculate initial power: (1/x)^(2*termStart+1)
+    let power = scale / x;
+    for (let i = 0; i < termStart && power > 0n; i++) {
+        power = power / xSquared;
+    }
+    
+    // Calculate sign for this term
+    let sign = (termStart % 2 === 0) ? 1n : -1n;
+    
+    // Calculate partial sum
+    for (let i = termStart; i < termEnd && power > 0n; i++) {
+        sum += sign * power / BigInt(2 * i + 1);
+        power = power / xSquared;
+        sign = -sign;
+        
+        // Send progress updates
+        if (i % Math.max(1, Math.floor((termEnd - termStart) / 20)) === 0) {
+            const progress = ((i - termStart) / (termEnd - termStart)) * 100;
+            self.postMessage({
+                type: 'worker_progress',
+                workerId: workerId,
+                progress: progress
+            });
         }
     }
     

@@ -3,6 +3,11 @@
 
 class PICalculator {
     constructor() {
+        // Machin's formula constants: PI = 16*arctan(1/5) - 4*arctan(1/239)
+        this.MACHIN_COEFFICIENT_5 = 16n;
+        this.MACHIN_COEFFICIENT_239 = 4n;
+        this.DIGITS_PER_ITERATION = 1.4; // Approximate digits gained per iteration
+        
         this.isCalculating = false;
         this.shouldStop = false;
         this.startTime = 0;
@@ -145,53 +150,62 @@ class PICalculator {
 
     calculateWithWorkers(iterations, numThreads, delay, useGpu = false) {
         return new Promise((resolve, reject) => {
-            // Calculate iterations per worker
-            const iterationsPerWorker = Math.ceil(iterations / numThreads);
-            const actualThreads = Math.min(numThreads, iterations);
+            // Calculate target digits based on iterations
+            const targetDigits = Math.ceil(iterations * this.DIGITS_PER_ITERATION);
+            const actualThreads = Math.min(numThreads, Math.max(1, Math.floor(iterations / 10)));
+            
+            // Calculate number of terms needed for precision
+            const totalTerms = targetDigits; // Approximate terms needed
+            const termsPerWorker = Math.ceil(totalTerms / actualThreads);
             
             this.workers = [];
             this.workerResults = new Array(actualThreads);
             let completedWorkers = 0;
             const workerProgress = new Array(actualThreads).fill(0);
+            let highestIterationDisplayed = 0;
+            let highestDecimalPlacesDisplayed = 0;
             
-            // Create workers
+            // Create workers for parallel term calculation
             for (let i = 0; i < actualThreads; i++) {
                 const worker = new Worker('pi-calculator-worker.js');
                 const workerId = i;
                 
-                // Calculate iteration range for this worker
-                const startIteration = i * iterationsPerWorker + 1;
-                const endIteration = Math.min((i + 1) * iterationsPerWorker, iterations);
-                const workerIterations = endIteration - startIteration + 1;
+                // Calculate term range for this worker
+                const termStart = i * termsPerWorker;
+                const termEnd = Math.min((i + 1) * termsPerWorker, totalTerms);
                 
                 // Handle messages from the worker
                 worker.onmessage = (e) => {
-                    const { type, piValue, decimalPlaces, iteration, progress, message } = e.data;
+                    const { type, partial5, partial239, workerId: msgWorkerId, progress, message } = e.data;
                     
-                    if (type === 'progress') {
-                        workerProgress[workerId] = progress;
+                    if (type === 'worker_progress') {
+                        workerProgress[workerId] = progress || 0;
                         
                         // Calculate overall progress
                         const totalProgress = workerProgress.reduce((sum, p) => sum + p, 0) / actualThreads;
                         this.updateProgress(totalProgress);
                         
-                        // Update stats with the highest iteration completed
-                        const currentIteration = Math.max(startIteration, startIteration + Math.floor(workerIterations * progress / 100) - 1);
-                        this.updateStats(currentIteration, decimalPlaces);
-                    } else if (type === 'complete') {
-                        this.workerResults[workerId] = { piValue, decimalPlaces, iteration: endIteration };
+                        // Estimate current iteration based on progress
+                        const estimatedIteration = Math.floor(iterations * (totalProgress / 100));
+                        const estimatedDecimals = Math.floor(estimatedIteration * this.DIGITS_PER_ITERATION);
+                        
+                        if (estimatedIteration > highestIterationDisplayed) {
+                            highestIterationDisplayed = estimatedIteration;
+                            highestDecimalPlacesDisplayed = estimatedDecimals;
+                            this.updateStats(estimatedIteration, estimatedDecimals);
+                        }
+                    } else if (type === 'partial_result') {
+                        this.workerResults[workerId] = { partial5, partial239 };
                         completedWorkers++;
                         workerProgress[workerId] = 100;
                         
                         // Check if all workers are done
                         if (completedWorkers === actualThreads) {
-                            // Use the result from the worker with the highest iteration count
-                            const bestResult = this.workerResults.reduce((best, current) => {
-                                return current.iteration > best.iteration ? current : best;
-                            });
+                            // Combine all partial results
+                            const finalPi = this.combinePartialResults(this.workerResults, targetDigits);
                             
-                            this.displayPi(bestResult.piValue);
-                            this.updateStats(iterations, bestResult.decimalPlaces);
+                            this.displayPi(finalPi);
+                            this.updateStats(iterations, finalPi.length - 2);
                             this.updateProgress(100);
                             this.showStatus('✓ Berechnung abgeschlossen!', 'completed');
                             this.copyBtn.disabled = false;
@@ -222,16 +236,48 @@ class PICalculator {
                 };
                 
                 this.workers.push(worker);
+                worker.workerId = workerId;
                 
-                // Start the calculation with this worker's range
+                // Start the calculation with this worker's term range
                 worker.postMessage({ 
-                    iterations: workerIterations,
+                    iterations: targetDigits,
+                    termStart: termStart,
+                    termEnd: termEnd,
+                    workerId: workerId,
+                    totalWorkers: actualThreads,
                     delay: delay,
-                    startIteration: startIteration,
                     useGpu: useGpu
                 });
             }
         });
+    }
+
+    combinePartialResults(partialResults, targetDigits) {
+        // Combine partial arctan results from all workers
+        // PI = 16*arctan(1/5) - 4*arctan(1/239) (Machin's formula)
+        
+        const scale = BigInt(10) ** BigInt(targetDigits + 10);
+        
+        // Sum all partial results for arctan(1/5)
+        let totalArctan5 = 0n;
+        for (const result of partialResults) {
+            totalArctan5 += BigInt(result.partial5);
+        }
+        
+        // Sum all partial results for arctan(1/239)
+        let totalArctan239 = 0n;
+        for (const result of partialResults) {
+            totalArctan239 += BigInt(result.partial239);
+        }
+        
+        // Calculate PI using Machin's formula
+        const pi = (this.MACHIN_COEFFICIENT_5 * totalArctan5 - this.MACHIN_COEFFICIENT_239 * totalArctan239) / (scale / BigInt(10) ** BigInt(targetDigits));
+        
+        // Convert to string with decimal point
+        const piStr = pi.toString();
+        if (piStr.length <= 1) return "3.14159";
+        
+        return piStr.charAt(0) + '.' + piStr.substring(1);
     }
 
 
