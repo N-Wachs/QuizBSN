@@ -7,7 +7,8 @@ class PICalculator {
         this.shouldStop = false;
         this.startTime = 0;
         this.piValue = '';
-        this.worker = null;
+        this.workers = [];
+        this.workerResults = [];
         
         this.initializeElements();
         this.initializeEventListeners();
@@ -19,6 +20,8 @@ class PICalculator {
         this.stopBtn = document.getElementById('stop-calculation');
         this.copyBtn = document.getElementById('copy-pi');
         this.iterationsInput = document.getElementById('iterations');
+        this.threadsInput = document.getElementById('threads');
+        this.useGpuCheckbox = document.getElementById('use-gpu');
         this.delayInput = document.getElementById('delay');
         this.piDisplay = document.getElementById('pi-display');
         this.currentIterationDisplay = document.getElementById('current-iteration');
@@ -54,10 +57,17 @@ class PICalculator {
         if (this.isCalculating) return;
 
         const iterations = parseInt(this.iterationsInput.value);
+        const threads = parseInt(this.threadsInput.value);
         const delay = parseInt(this.delayInput.value);
+        const useGpu = this.useGpuCheckbox.checked;
 
         if (isNaN(iterations) || iterations < 1) {
             this.showStatus('Bitte geben Sie eine gültige Anzahl von Iterationen ein!', 'error');
+            return;
+        }
+
+        if (isNaN(threads) || threads < 1 || threads > 32) {
+            this.showStatus('Bitte geben Sie eine gültige Anzahl von Threads ein (1-32)!', 'error');
             return;
         }
 
@@ -69,9 +79,12 @@ class PICalculator {
         this.stopBtn.disabled = false;
         this.copyBtn.disabled = true;
         this.iterationsInput.disabled = true;
+        this.threadsInput.disabled = true;
+        this.useGpuCheckbox.disabled = true;
         this.delayInput.disabled = true;
 
-        this.showStatus('Berechnung läuft...', 'calculating');
+        const gpuText = useGpu ? ' + GPU' : '';
+        this.showStatus(`Berechnung läuft mit ${threads} Thread(s)${gpuText}...`, 'calculating');
         this.progressContainer.classList.add('show');
         this.updateProgress(0);
 
@@ -79,7 +92,7 @@ class PICalculator {
         this.piDisplay.innerHTML = '<span class="pi-integer">3</span><span class="pi-decimals">.</span>';
 
         try {
-            await this.calculateWithWorker(iterations, delay);
+            await this.calculateWithWorkers(iterations, threads, delay, useGpu);
         } catch (error) {
             this.showStatus('Fehler bei der Berechnung: ' + error.message, 'error');
             console.error(error);
@@ -89,6 +102,8 @@ class PICalculator {
         this.startBtn.disabled = false;
         this.stopBtn.disabled = true;
         this.iterationsInput.disabled = false;
+        this.threadsInput.disabled = false;
+        this.useGpuCheckbox.disabled = false;
         this.delayInput.disabled = false;
     }
 
@@ -96,11 +111,14 @@ class PICalculator {
         this.shouldStop = true;
         this.stopBtn.disabled = true;
         
-        // Terminate the worker
-        if (this.worker) {
-            this.worker.terminate();
-            this.worker = null;
-        }
+        // Terminate all workers
+        this.workers.forEach(worker => {
+            if (worker) {
+                worker.terminate();
+            }
+        });
+        this.workers = [];
+        this.workerResults = [];
         
         this.showStatus('Berechnung gestoppt', 'calculating');
         this.progressContainer.classList.remove('show');
@@ -125,49 +143,94 @@ class PICalculator {
         this.progressText.textContent = rounded + '%';
     }
 
-    calculateWithWorker(iterations, delay) {
+    calculateWithWorkers(iterations, numThreads, delay, useGpu = false) {
         return new Promise((resolve, reject) => {
-            // Create a new worker
-            this.worker = new Worker('pi-calculator-worker.js');
+            // Calculate iterations per worker
+            const iterationsPerWorker = Math.ceil(iterations / numThreads);
+            const actualThreads = Math.min(numThreads, iterations);
             
-            // Handle messages from the worker
-            this.worker.onmessage = (e) => {
-                const { type, piValue, decimalPlaces, iteration, progress, message } = e.data;
+            this.workers = [];
+            this.workerResults = new Array(actualThreads);
+            let completedWorkers = 0;
+            const workerProgress = new Array(actualThreads).fill(0);
+            
+            // Create workers
+            for (let i = 0; i < actualThreads; i++) {
+                const worker = new Worker('pi-calculator-worker.js');
+                const workerId = i;
                 
-                if (type === 'progress') {
-                    this.displayPi(piValue);
-                    this.updateStats(iteration, decimalPlaces);
-                    this.updateProgress(progress);
-                } else if (type === 'complete') {
-                    this.displayPi(piValue);
-                    this.updateStats(iteration, decimalPlaces);
-                    this.updateProgress(100);
-                    this.showStatus('✓ Berechnung abgeschlossen!', 'completed');
-                    this.copyBtn.disabled = false;
+                // Calculate iteration range for this worker
+                const startIteration = i * iterationsPerWorker + 1;
+                const endIteration = Math.min((i + 1) * iterationsPerWorker, iterations);
+                const workerIterations = endIteration - startIteration + 1;
+                
+                // Handle messages from the worker
+                worker.onmessage = (e) => {
+                    const { type, piValue, decimalPlaces, iteration, progress, message } = e.data;
+                    
+                    if (type === 'progress') {
+                        workerProgress[workerId] = progress;
+                        
+                        // Calculate overall progress
+                        const totalProgress = workerProgress.reduce((sum, p) => sum + p, 0) / actualThreads;
+                        this.updateProgress(totalProgress);
+                        
+                        // Update stats with the highest iteration completed
+                        const currentIteration = Math.max(startIteration, startIteration + Math.floor(workerIterations * progress / 100) - 1);
+                        this.updateStats(currentIteration, decimalPlaces);
+                    } else if (type === 'complete') {
+                        this.workerResults[workerId] = { piValue, decimalPlaces, iteration: endIteration };
+                        completedWorkers++;
+                        workerProgress[workerId] = 100;
+                        
+                        // Check if all workers are done
+                        if (completedWorkers === actualThreads) {
+                            // Use the result from the worker with the highest iteration count
+                            const bestResult = this.workerResults.reduce((best, current) => {
+                                return current.iteration > best.iteration ? current : best;
+                            });
+                            
+                            this.displayPi(bestResult.piValue);
+                            this.updateStats(iterations, bestResult.decimalPlaces);
+                            this.updateProgress(100);
+                            this.showStatus('✓ Berechnung abgeschlossen!', 'completed');
+                            this.copyBtn.disabled = false;
+                            this.progressContainer.classList.remove('show');
+                            
+                            // Terminate all workers
+                            this.workers.forEach(w => w.terminate());
+                            this.workers = [];
+                            resolve();
+                        }
+                    } else if (type === 'error') {
+                        this.showStatus('Fehler: ' + message, 'error');
+                        this.progressContainer.classList.remove('show');
+                        this.workers.forEach(w => w.terminate());
+                        this.workers = [];
+                        reject(new Error(message));
+                    }
+                };
+                
+                // Handle worker errors
+                worker.onerror = (error) => {
+                    this.showStatus('Worker-Fehler: ' + error.message, 'error');
                     this.progressContainer.classList.remove('show');
-                    this.worker.terminate();
-                    this.worker = null;
-                    resolve();
-                } else if (type === 'error') {
-                    this.showStatus('Fehler: ' + message, 'error');
-                    this.progressContainer.classList.remove('show');
-                    this.worker.terminate();
-                    this.worker = null;
-                    reject(new Error(message));
-                }
-            };
-            
-            // Handle worker errors
-            this.worker.onerror = (error) => {
-                this.showStatus('Worker-Fehler: ' + error.message, 'error');
-                this.progressContainer.classList.remove('show');
-                console.error('Worker error:', error);
-                this.worker = null;
-                reject(error);
-            };
-            
-            // Start the calculation
-            this.worker.postMessage({ iterations, delay });
+                    console.error('Worker error:', error);
+                    this.workers.forEach(w => w.terminate());
+                    this.workers = [];
+                    reject(error);
+                };
+                
+                this.workers.push(worker);
+                
+                // Start the calculation with this worker's range
+                worker.postMessage({ 
+                    iterations: workerIterations,
+                    delay: delay,
+                    startIteration: startIteration,
+                    useGpu: useGpu
+                });
+            }
         });
     }
 
