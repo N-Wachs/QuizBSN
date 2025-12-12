@@ -153,6 +153,8 @@ class PICalculator {
             this.workerResults = new Array(actualThreads);
             let completedWorkers = 0;
             const workerProgress = new Array(actualThreads).fill(0);
+            let highestIterationDisplayed = 0;
+            let highestDecimalPlacesDisplayed = 0;
             
             // Create workers
             for (let i = 0; i < actualThreads; i++) {
@@ -175,9 +177,12 @@ class PICalculator {
                         const totalProgress = workerProgress.reduce((sum, p) => sum + p, 0) / actualThreads;
                         this.updateProgress(totalProgress);
                         
-                        // Update stats with the highest iteration completed
-                        const currentIteration = Math.max(startIteration, startIteration + Math.floor(workerIterations * progress / 100) - 1);
-                        this.updateStats(currentIteration, decimalPlaces);
+                        // Only update display if this iteration is higher than what we've shown
+                        if (iteration > highestIterationDisplayed) {
+                            highestIterationDisplayed = iteration;
+                            highestDecimalPlacesDisplayed = Math.max(highestDecimalPlacesDisplayed, decimalPlaces);
+                            this.updateStats(iteration, highestDecimalPlacesDisplayed);
+                        }
                     } else if (type === 'complete') {
                         this.workerResults[workerId] = { piValue, decimalPlaces, iteration: endIteration };
                         completedWorkers++;

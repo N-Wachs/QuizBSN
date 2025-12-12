@@ -34,12 +34,13 @@ async function calculatePiChudnovsky(maxIterations, delay, startIteration = 1, u
         // Update display periodically or on last iteration
         if (iteration % Math.max(1, Math.floor(maxIterations / 50)) === 0 || iteration === maxIterations) {
             const truncated = piString.substring(0, currentDigits + 2); // +2 for "3."
+            const actualDecimalPlaces = truncated.length - 2;
             
             self.postMessage({
                 type: 'progress',
                 iteration: absoluteIteration,
                 piValue: truncated,
-                decimalPlaces: truncated.length - 2,
+                decimalPlaces: actualDecimalPlaces,
                 progress: progress
             });
             
