@@ -1,5 +1,5 @@
-// PI Calculator using Chudnovsky Algorithm
-// This algorithm provides ~14 digits per iteration
+// PI Calculator using Machin's Formula
+// This algorithm provides approximately 1.4 digits per iteration
 
 class PICalculator {
     constructor() {
@@ -112,8 +112,8 @@ class PICalculator {
     }
 
     async calculatePiChudnovsky(maxIterations, delay) {
-        // Using Machin-like formula for PI calculation with high precision
-        // Machin's formula: PI/4 = 4*arctan(1/5) - arctan(1/239)
+        // Using Machin's formula for PI calculation with high precision
+        // Machin's formula: PI = 16*arctan(1/5) - 4*arctan(1/239)
         // Using BigInt for arbitrary precision
         
         const digitsPerIteration = 1.4; // Approximate digits per iteration
@@ -198,7 +198,7 @@ class PICalculator {
         let formattedDec = '';
         for (let i = 0; i < decPart.length; i += 10) {
             if (i > 0) formattedDec += ' ';
-            formattedDec += decPart.substr(i, 10);
+            formattedDec += decPart.substring(i, i + 10);
         }
         
         this.piDisplay.innerHTML = `

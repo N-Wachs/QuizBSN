@@ -205,7 +205,7 @@
                     <label for="iterations">Anzahl der Iterationen:</label>
                     <input type="number" id="iterations" min="1" max="1000" value="100" step="1">
                     <div class="description">
-                        Mehr Iterationen = höhere Genauigkeit. Jede Iteration liefert etwa 14 zusätzliche korrekte Dezimalstellen.
+                        Mehr Iterationen = höhere Genauigkeit. Jede Iteration liefert etwa 1-2 zusätzliche korrekte Dezimalstellen.
                     </div>
                 </div>
 
@@ -248,9 +248,9 @@
             <div style="margin-top: 2rem; padding: 1.5rem; background: var(--background); border-radius: 0.75rem;">
                 <h3 style="color: var(--text-primary); margin-bottom: 1rem;">ℹ️ Über diesen PI Rechner</h3>
                 <p style="color: var(--text-secondary); line-height: 1.6;">
-                    Dieser Rechner verwendet den <strong>Chudnovsky-Algorithmus</strong>, einen der schnellsten bekannten 
-                    Algorithmen zur Berechnung von π. Jede Iteration liefert etwa 14 zusätzliche korrekte Dezimalstellen. 
-                    Die Berechnung erfolgt mit hoher Präzision unter Verwendung der BigInt-Arithmetik von JavaScript.
+                    Dieser Rechner verwendet die <strong>Machin-Formel</strong> (PI = 16*arctan(1/5) - 4*arctan(1/239)), 
+                    einen klassischen und präzisen Algorithmus zur Berechnung von π. Jede Iteration liefert etwa 1-2 zusätzliche 
+                    korrekte Dezimalstellen. Die Berechnung erfolgt mit hoher Präzision unter Verwendung der BigInt-Arithmetik von JavaScript.
                 </p>
                 <p style="color: var(--text-secondary); line-height: 1.6; margin-top: 0.5rem;">
                     <strong>Hinweis:</strong> Bei sehr hohen Iterationszahlen (>500) kann die Berechnung einige Zeit dauern 
