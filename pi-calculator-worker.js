@@ -109,8 +109,7 @@ function calculatePiMachinGPU(digits) {
         try {
             return calculatePiMachinWithOffscreenCanvas(digits);
         } catch (e) {
-            // Fallback to optimized CPU version
-            console.log('OffscreenCanvas failed, using optimized CPU version');
+            // Fallback to optimized CPU version (silent fallback)
         }
     }
     
@@ -158,9 +157,9 @@ function arctanBigIntOptimized(x, scale, precision) {
     let sign = 1n;
     
     // Process in batches for better cache locality (simulating GPU parallelism)
-    const batchSize = 4;
-    for (let i = 0; i < precision; i += batchSize) {
-        for (let j = 0; j < batchSize && (i + j) < precision && power > 0n; j++) {
+    const OPTIMIZATION_BATCH_SIZE = 4;
+    for (let i = 0; i < precision; i += OPTIMIZATION_BATCH_SIZE) {
+        for (let j = 0; j < OPTIMIZATION_BATCH_SIZE && (i + j) < precision && power > 0n; j++) {
             const idx = i + j;
             sum += sign * power / BigInt(2 * idx + 1);
             power = power / xSquared;

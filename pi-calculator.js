@@ -176,7 +176,7 @@ class PICalculator {
                         this.updateProgress(totalProgress);
                         
                         // Update stats with the highest iteration completed
-                        const currentIteration = startIteration + Math.max(0, Math.floor(workerIterations * progress / 100) - 1);
+                        const currentIteration = Math.max(startIteration, startIteration + Math.floor(workerIterations * progress / 100) - 1);
                         this.updateStats(currentIteration, decimalPlaces);
                     } else if (type === 'complete') {
                         this.workerResults[workerId] = { piValue, decimalPlaces, iteration: endIteration };
@@ -185,9 +185,9 @@ class PICalculator {
                         
                         // Check if all workers are done
                         if (completedWorkers === actualThreads) {
-                            // Use the result with the most decimal places (from the worker with most iterations)
+                            // Use the result from the worker with the highest iteration count
                             const bestResult = this.workerResults.reduce((best, current) => {
-                                return current.decimalPlaces > best.decimalPlaces ? current : best;
+                                return current.iteration > best.iteration ? current : best;
                             });
                             
                             this.displayPi(bestResult.piValue);
