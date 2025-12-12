@@ -256,6 +256,24 @@
                 </div>
 
                 <div class="control-group">
+                    <label for="threads">Anzahl der Threads:</label>
+                    <input type="number" id="threads" min="1" max="32" value="4" step="1">
+                    <div class="description">
+                        Anzahl der parallelen Web Worker für die Berechnung. Mehr Threads können die Berechnung beschleunigen.
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="use-gpu">
+                        <input type="checkbox" id="use-gpu" style="width: auto; margin-right: 0.5rem;">
+                        GPU-Beschleunigung (WebGL)
+                    </label>
+                    <div class="description">
+                        Verwendet WebGL für GPU-beschleunigte Berechnungen. Kann die Leistung auf unterstützten Geräten deutlich verbessern.
+                    </div>
+                </div>
+
+                <div class="control-group">
                     <label for="delay">Anzeigeverzögerung (ms):</label>
                     <input type="number" id="delay" min="0" max="1000" value="10" step="10">
                     <div class="description">
