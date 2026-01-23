@@ -3,110 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netzwerktechnik Quiz - Klausurvorbereitung</title>
+    <title>ImmoVerwaltung Pro - Immobilienverwaltung</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Canvas.confetti for celebration effects -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <!-- Animated background particles -->
-    <div class="particles-container" id="particles"></div>
-    <div class="container">
-        <header>
-            <h1>🌐 Netzwerktechnik Quiz</h1>
-            <p class="subtitle">Klausurvorbereitung - Grundlagen der Netzwerktechnik</p>
-        </header>
-
-        <div class="quiz-container">
-            <!-- Start Screen -->
-            <div id="start-screen" class="screen active">
-                <h2>Willkommen zum Netzwerktechnik Quiz!</h2>
-                <p>Teste dein Wissen zu den folgenden Themen:</p>
-                <ul class="topics-list">
-                    <li>PAN, LAN, MAN, WAN</li>
-                    <li>Übertragungsmedien</li>
-                    <li>TP-Kabel und Glasfaser</li>
-                    <li>Netzwerkgeräte (Hub, Switch, Router)</li>
-                    <li>Netzwerktopologien</li>
-                    <li>Simplex, Halbduplex, Vollduplex</li>
-                    <li>Strukturierte Verkabelung</li>
-                    <li>Netzwerkkommunikation</li>
-                </ul>
-                <div class="topic-filter">
-                    <h3>Wähle ein Thema (optional):</h3>
-                    <select id="topic-select">
-                        <option value="all">Alle Themen</option>
-                        <option value="netzwerktypen">PAN, LAN, MAN, WAN</option>
-                        <option value="kabel">Kabel und Übertragungsmedien</option>
-                        <option value="geraete">Netzwerkgeräte</option>
-                        <option value="topologien">Topologien</option>
-                        <option value="kommunikation">Kommunikation</option>
-                        <option value="verkabelung">Strukturierte Verkabelung</option>
-                    </select>
-                </div>
-                <button id="start-btn" class="btn btn-primary">Quiz starten</button>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🏢</span>
+                <span class="logo-text">ImmoVerwaltung Pro</span>
             </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#properties" class="nav-link">Immobilien</a></li>
+                <li><a href="#services" class="nav-link">Leistungen</a></li>
+                <li><a href="#contact" class="nav-link">Kontakt</a></li>
+            </ul>
+        </div>
+    </nav>
 
-            <!-- Quiz Screen -->
-            <div id="quiz-screen" class="screen">
-                <div class="streak-display" id="streak-display">
-                    🔥 <span id="streak-count">0</span> Streak!
-                </div>
-                <div class="progress-bar">
-                    <div id="progress" class="progress-fill"></div>
-                    <span class="progress-text" id="progress-text">0%</span>
-                </div>
-                <div class="question-info">
-                    <span id="question-number">Frage 1 von 20</span>
-                    <span id="current-topic" class="topic-badge"></span>
-                </div>
-                
-                <div id="question-container">
-                    <h2 id="question-text"></h2>
-                    <div id="answers-container"></div>
-                </div>
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Professionelle Immobilienverwaltung</h1>
+            <p class="hero-subtitle">Effizient, zuverlässig und transparent - Ihre Immobilien in besten Händen</p>
+            <button class="btn btn-primary" onclick="scrollToSection('properties')">Immobilien entdecken</button>
+        </div>
+    </section>
 
-                <div class="feedback" id="feedback"></div>
-
-                <div class="quiz-controls">
-                    <button id="prev-btn" class="btn btn-secondary" disabled>Zurück</button>
-                    <button id="next-btn" class="btn btn-primary" disabled>Weiter</button>
-                </div>
-            </div>
-
-            <!-- Results Screen -->
-            <div id="results-screen" class="screen">
-                <h2>Quiz abgeschlossen! 🎉</h2>
-                <div class="results-summary">
-                    <div class="score-circle">
-                        <span id="final-score">0%</span>
-                    </div>
-                    <p id="score-message"></p>
-                    <div class="results-details">
-                        <p><strong>Richtige Antworten:</strong> <span id="correct-count">0</span></p>
-                        <p><strong>Falsche Antworten:</strong> <span id="incorrect-count">0</span></p>
-                        <p><strong>Gesamt:</strong> <span id="total-count">0</span></p>
-                    </div>
-                </div>
-                <div class="results-actions">
-                    <button id="review-btn" class="btn btn-secondary">Antworten überprüfen</button>
-                    <button id="restart-btn" class="btn btn-primary">Neu starten</button>
-                </div>
-            </div>
-
-            <!-- Review Screen -->
-            <div id="review-screen" class="screen">
-                <h2>Antworten überprüfen</h2>
-                <div id="review-container"></div>
-                <button id="back-to-results-btn" class="btn btn-secondary">Zurück zu Ergebnissen</button>
+    <!-- Search & Filter Section -->
+    <section class="search-section">
+        <div class="container">
+            <h2 class="section-title">Immobilien suchen</h2>
+            <div class="search-filters">
+                <input type="text" id="search-input" class="search-input" placeholder="Suche nach Ort, Typ...">
+                <select id="type-filter" class="filter-select">
+                    <option value="all">Alle Typen</option>
+                    <option value="wohnung">Wohnung</option>
+                    <option value="haus">Haus</option>
+                    <option value="buero">Büro</option>
+                    <option value="gewerbe">Gewerbe</option>
+                </select>
+                <select id="status-filter" class="filter-select">
+                    <option value="all">Alle Status</option>
+                    <option value="verfuegbar">Verfügbar</option>
+                    <option value="vermietet">Vermietet</option>
+                </select>
+                <button class="btn btn-secondary" onclick="filterProperties()">Filtern</button>
             </div>
         </div>
+    </section>
 
-        <footer>
-            <p>Klausurvorbereitung - Netzwerktechnik | 2025 | <a href="pi-calculator.html" style="color: white; text-decoration: underline;">PI Rechner</a></p>
-        </footer>
+    <!-- Properties Section -->
+    <section id="properties" class="properties-section">
+        <div class="container">
+            <h2 class="section-title">Unsere Immobilien</h2>
+            <div id="properties-grid" class="properties-grid">
+                <!-- Properties will be inserted by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <h2 class="section-title">Unsere Leistungen</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🏠</div>
+                    <h3>Immobilienverwaltung</h3>
+                    <p>Professionelle Verwaltung Ihrer Wohn- und Gewerbeimmobilien</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">📊</div>
+                    <h3>Finanzmanagement</h3>
+                    <p>Transparente Abrechnung und finanzielle Verwaltung</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🔧</div>
+                    <h3>Instandhaltung</h3>
+                    <p>Koordination von Wartung und Reparaturen</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">👥</div>
+                    <h3>Mieterbetreuung</h3>
+                    <p>Kompetente Betreuung für Ihre Mieter</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2 class="section-title">Kontaktieren Sie uns</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Unsere Kontaktdaten</h3>
+                    <p><strong>Telefon:</strong> +49 123 456789</p>
+                    <p><strong>Email:</strong> info@immoverwaltung-pro.de</p>
+                    <p><strong>Adresse:</strong> Musterstraße 123, 12345 Musterstadt</p>
+                    <p><strong>Öffnungszeiten:</strong> Mo-Fr 9:00-18:00 Uhr</p>
+                </div>
+                <form id="contact-form" class="contact-form">
+                    <input type="text" id="name" placeholder="Ihr Name" required>
+                    <input type="email" id="email" placeholder="Ihre E-Mail" required>
+                    <input type="tel" id="phone" placeholder="Ihre Telefonnummer">
+                    <textarea id="message" placeholder="Ihre Nachricht" rows="5" required></textarea>
+                    <button type="submit" class="btn btn-primary">Nachricht senden</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 ImmoVerwaltung Pro. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
+    <!-- Property Detail Modal -->
+    <div id="property-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body">
+                <!-- Property details will be inserted here -->
+            </div>
+        </div>
     </div>
 
-    <script src="quiz.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
